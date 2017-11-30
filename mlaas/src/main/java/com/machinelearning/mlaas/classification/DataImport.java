@@ -1,6 +1,7 @@
 package com.machinelearning.mlaas.classification;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -11,11 +12,11 @@ import weka.core.Instances;
 
 public class DataImport {
 
-	public Instances createDataSet(ArrayList<String> attributeList) {
+	public Instances createDataSet(List<String> attributeList) {
 
 		ArrayList<Attribute> attributes = new ArrayList<>();
 		for (String attributeName : attributeList) {
-			attributes.add(new Attribute(attributeName));
+			attributes.add(new Attribute(attributeName,(ArrayList<String>)null));
 		}
 
 		Instances dataSet = new Instances("DataSet", attributes, 0);

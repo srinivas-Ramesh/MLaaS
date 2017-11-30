@@ -11,3 +11,16 @@ Format of JSON file to be sent.
  ..
  }
  }
+ 
+ 
+ example
+ ----------
+ 
+ {
+ "attributes":["att1","att2","att3"],
+ "type":"String",
+ "data":[
+   ["a","b","c"],
+   ["d","e","f"]
+   ]
+}
