@@ -1,4 +1,4 @@
-package com.machinelearning.mlaas;
+package com.machinelearning.mlaas.resources;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
