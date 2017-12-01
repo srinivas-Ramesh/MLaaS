@@ -8,6 +8,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 
 import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.Instances;
 
 public class DataImport {
@@ -30,8 +31,8 @@ public class DataImport {
 		if (type.equalsIgnoreCase("String")) {
 			String[][] stringDataArray = gsonPretty.fromJson(dataArray, String[][].class);
 
-			for (int i = 0; i < stringDataArray[0].length; i++) {
-				for (int j = 0; j < stringDataArray[1].length; j++) {
+			for (int i = 0; i < stringDataArray.length; i++) {
+				for (int j = 0; j < stringDataArray[i].length; j++) {
 					dataSet.attribute(i).addStringValue(stringDataArray[i][j]);
 				}
 			}
