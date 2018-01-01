@@ -63,10 +63,15 @@ public class ClusteringResource {
 				reader = new BufferedReader(new InputStreamReader(uploadedInputStream));
 				Instances data = new Instances(reader);
 				DataModel.setClusteringDataSet(data);
+				
+				//clear the k-means calculation for previous dataSet
+				if(DataModel.getkMeans() !=null) {
+					DataModel.setkMeans(null);
+				}
 			} catch (IOException e) {
 				return Response.status(500).entity(e.getMessage()).build();
 			}
-			return Response.ok("DataSet has been saved in the system", MediaType.TEXT_PLAIN).build();
+			return Response.ok("Clustering DataSet has been saved in the system", MediaType.TEXT_PLAIN).build();
 		}
 	}
 }
