@@ -7,10 +7,9 @@ import java.io.InputStreamReader;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -27,23 +26,24 @@ import weka.core.Instances;
 public class ClusteringResource {
 
 	@GET
-	@Produces(MediaType.TEXT_PLAIN)
-	public Response getResults(@PathParam("clusterCount") Integer count) {
+	public Response getResults(@HeaderParam("cluster-count") Integer count) {
 
 		Clustering clustering = new Clustering();
 
 		if (count == null) {
-			Response.status(400).entity("No cluster Count Provided").build();
+			return Response.status(400).entity("No cluster Count Provided").build();
 		}
 		if (DataModel.getClusteringDataSet() == null) {
 			return Response.status(409).entity("No DataSet provided!").build();
-		} else if (DataModel.getkMeans() == null) {
+		}
+		if (DataModel.getkMeans() == null
+				|| (DataModel.getkMeans() != null && count.intValue() != DataModel.getkMeans().getNumClusters())) {
 			clustering.xMeancluster(DataModel.getClusteringDataSet(), count.intValue());
 		}
 
 		try {
 			JsonObject result = clustering.buildClusterResult(DataModel.getkMeans(), DataModel.getClusteringDataSet());
-			return Response.ok(result, MediaType.APPLICATION_JSON).build();
+			return Response.ok(result.toString(), MediaType.APPLICATION_JSON).build();
 		} catch (Exception e) {
 			return Response.serverError().entity(e).build();
 		}
@@ -64,7 +64,7 @@ public class ClusteringResource {
 				Instances data = new Instances(reader);
 				DataModel.setClusteringDataSet(data);
 			} catch (IOException e) {
-				e.printStackTrace();
+				return Response.status(500).entity(e.getMessage()).build();
 			}
 			return Response.ok("DataSet has been saved in the system", MediaType.TEXT_PLAIN).build();
 		}
