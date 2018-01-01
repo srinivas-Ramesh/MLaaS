@@ -4,13 +4,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Type;
-import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -18,50 +17,39 @@ import javax.ws.rs.core.Response;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import com.machinelearning.mlaas.classification.DataImport;
 import com.machinelearning.mlaas.datamodel.DataModel;
+import com.machinelearning.mlass.clustering.Clustering;
 
 import weka.core.Instances;
 
-
-@Path("/data")
-public class DataSetResource {
+@Path("/clustering")
+public class ClusteringResource {
 
 	@GET
 	@Produces(MediaType.TEXT_PLAIN)
-	public String getIt() {
-		return "Got it!";
+	public Response getResults(@PathParam("clusterCount") Integer count) {
+
+		Clustering clustering = new Clustering();
+
+		if (count == null) {
+			Response.status(400).entity("No cluster Count Provided").build();
+		}
+		if (DataModel.getClusteringDataSet() == null) {
+			return Response.status(409).entity("No DataSet provided!").build();
+		} else if (DataModel.getkMeans() == null) {
+			clustering.xMeancluster(DataModel.getClusteringDataSet(), count.intValue());
+		}
+
+		try {
+			JsonObject result = clustering.buildClusterResult(DataModel.getkMeans(), DataModel.getClusteringDataSet());
+			return Response.ok(result, MediaType.APPLICATION_JSON).build();
+		} catch (Exception e) {
+			return Response.serverError().entity(e).build();
+		}
 	}
 
-	@POST
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response postDataSet(String dataSet) {
-
-		JsonParser parser = new JsonParser();
-		JsonObject dataSetObject = parser.parse(dataSet).getAsJsonObject();
-		JsonElement attributeJsonArray = dataSetObject.get("attributes");
-		JsonElement type = dataSetObject.get("type");
-		JsonElement dataSetJsonArray = dataSetObject.get("data");
-
-		Type listType = new TypeToken<List<String>>() {
-		}.getType();
-		List<String> attributeList = new Gson().fromJson(attributeJsonArray, listType);
-
-		DataImport dataImport = new DataImport();
-
-		Instances data = dataImport.createDataSet(attributeList);
-		dataImport.addDataToDataSet(data, (JsonArray) dataSetJsonArray, type.getAsString());
-		return Response.ok("{\"Response\":\"successful\"}", MediaType.APPLICATION_JSON).build();
-	}
-
-	@Path("/file")
+	@Path("/upload")
 	@POST
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	public Response uploadFile(@FormDataParam("file") InputStream uploadedInputStream,
@@ -81,5 +69,4 @@ public class DataSetResource {
 			return Response.ok("DataSet has been saved in the system", MediaType.TEXT_PLAIN).build();
 		}
 	}
-
 }

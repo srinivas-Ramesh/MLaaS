@@ -24,3 +24,13 @@ Format of JSON file to be sent.
    ["d","e","f"]
    ]
 }
+
+
+ARFF files can also be sent by multi media POST call.
+------------------------------------------------------
+
+End point to this call is */data/file
+
+Make the POST call with the file as form-data in the body of the call with the key mentioned as "file" and value being the file.
+
+

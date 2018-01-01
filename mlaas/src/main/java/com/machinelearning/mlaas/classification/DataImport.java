@@ -17,7 +17,7 @@ public class DataImport {
 
 		ArrayList<Attribute> attributes = new ArrayList<>();
 		for (String attributeName : attributeList) {
-			attributes.add(new Attribute(attributeName,(ArrayList<String>)null));
+			attributes.add(new Attribute(attributeName, (ArrayList<String>) null));
 		}
 
 		Instances dataSet = new Instances("DataSet", attributes, 0);
@@ -38,7 +38,7 @@ public class DataImport {
 			}
 		} else {
 			double[][] numericDataArray = gsonPretty.fromJson(dataArray, double[][].class);
-			
+
 			for (int i = 0; i < numericDataArray[0].length; i++) {
 				for (int j = 0; j < numericDataArray[1].length; j++) {
 					dataSet.attribute(i).setWeight(numericDataArray[i][j]);
