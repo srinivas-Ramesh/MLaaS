@@ -1,10 +1,8 @@
 package com.machinelearning.mlaas.resources;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Random;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -17,11 +15,11 @@ import javax.ws.rs.core.Response;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.machinelearning.mlaas.classification.Classification;
 import com.machinelearning.mlaas.datamodel.DataModel;
 
-import weka.classifiers.Evaluation;
-import weka.classifiers.trees.J48;
 import weka.core.Instances;
 
 @Path("/classification")
@@ -34,26 +32,19 @@ public class ClassificationResource {
 			return Response.status(500).entity("Training Data Not Provided").build();
 		}
 
-		if (DataModel.getClassicationEvaluation() == null) {
+		else if (DataModel.getClassifierTree() == null) {
 			try {
-				String[] options = new String[1];
-				options[0] = "-U";
-				J48 classifierTree = new J48();
-				classifierTree.setOptions(options);
-				Evaluation evaluation = new Evaluation(DataModel.getClassificationTrainingDataSet());
-				evaluation.crossValidateModel(classifierTree, DataModel.getClassificationTrainingDataSet(), 10,
-						new Random(1));
-				DataModel.setClassicationEvaluation(evaluation);
-				
+				Classification.buildClassifier();
+				return Response.ok("Classifier has been Built").build();
 			} catch (Exception e) {
 				return Response.status(500).entity(e.getMessage()).build();
 			}
 		}
-		
-		JsonObject response = prepareClassifierResponse(DataModel.getClassicationEvaluation());
-		return Response.ok(response.toString(),MediaType.APPLICATION_JSON).build();
-	}
 
+		else {
+			return Response.ok("Classifier has been Built").build();
+		}
+	}
 
 	@Path("/upload/{dataSet}")
 	@POST
@@ -69,31 +60,69 @@ public class ClassificationResource {
 				reader = new BufferedReader(new InputStreamReader(uploadedInputStream));
 				Instances data = new Instances(reader);
 				if (dataSet.equalsIgnoreCase("trainingSet")) {
+					data.setClassIndex(data.numAttributes() - 1);
 					DataModel.setClassificationTrainingDataSet(data);
-					// clear the evaluation for previous dataSet
+
+					// clear the evaluation and classifier tree for previous
+					// dataSet
 					if (DataModel.getClassicationEvaluation() != null) {
 						DataModel.setClassicationEvaluation(null);
 					}
+					if (DataModel.getClassifierTree() != null) {
+						DataModel.setClassifierTree(null);
+					}
+					// Build Classifier
+					Classification.buildClassifier();
+					return Response.ok("Classification DataSet has been saved in the system and Classifier is trained",
+							MediaType.TEXT_PLAIN).build();
 				} else if (dataSet.equalsIgnoreCase("testingSet")) {
+					data.setClassIndex(data.numAttributes() - 1);
 					DataModel.setClassificationTestingDataSet(data);
+					return Response.ok("Testing DataSet has been saved in the system", MediaType.TEXT_PLAIN).build();
 				} else {
 					return Response.status(404).entity("Not found!").build();
 				}
 
-			} catch (IOException e) {
+			} catch (Exception e) {
 				return Response.status(500).entity(e.getMessage()).build();
 			}
-			return Response.ok("Classification DataSet has been saved in the system", MediaType.TEXT_PLAIN).build();
+
 		}
 	}
-	
-	private JsonObject prepareClassifierResponse(Evaluation evaluation) {
+
+	@Path("/validation")
+	@GET
+	public Response validateTestingDataSet() {
+
+		if (DataModel.getClassificationTestingDataSet() == null) {
+			return Response.status(400).entity("No Testing dataset provided").build();
+		} else if (DataModel.getClassifierTree() == null) {
+			return Response.status(400).entity("Calssifier has not been trained").build();
+		} else if (DataModel.getClassificationTrainingDataSet() == null) {
+			return Response.status(400).entity("No Training dataset provided").build();
+		} else {
+			try {
+				Instances classifiedTestingData = Classification.classifyTestingData();
+				JsonArray result = prepareTestingDataResult(classifiedTestingData);
+				return Response.ok(result.toString(), MediaType.APPLICATION_JSON).build();
+			} catch (Exception e) {
+				return Response.status(500).entity(e.getMessage()).build();
+			}
+		}
+	}
+
+	private JsonArray prepareTestingDataResult(Instances classifiedTestingData) {
+
+		JsonArray instances = new JsonArray();
 		
-		JsonObject response = new JsonObject();
-		response.addProperty("correct instances classified", evaluation.correct());
-		response.addProperty("incorrect instances", evaluation.incorrect());
-		response.addProperty("percent correct classification", evaluation.pctCorrect());
-		return response;
+		for(int i = 0; i<=classifiedTestingData.numInstances()-1;i++){
+			JsonObject instance = new JsonObject();
+			for(int j = 0;j<=classifiedTestingData.numAttributes()-1; j++){
+				instance.addProperty(classifiedTestingData.attribute(j).name(), classifiedTestingData.instance(i).value(j));
+			}
+			instances.add(instance);
+		}
+		return instances;
 	}
 
 }
