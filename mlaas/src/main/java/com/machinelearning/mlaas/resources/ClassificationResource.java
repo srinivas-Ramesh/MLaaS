@@ -118,7 +118,12 @@ public class ClassificationResource {
 		for(int i = 0; i<=classifiedTestingData.numInstances()-1;i++){
 			JsonObject instance = new JsonObject();
 			for(int j = 0;j<=classifiedTestingData.numAttributes()-1; j++){
-				instance.addProperty(classifiedTestingData.attribute(j).name(), classifiedTestingData.instance(i).value(j));
+				if(classifiedTestingData.attribute(j).isNumeric()){
+					instance.addProperty(classifiedTestingData.attribute(j).name(), classifiedTestingData.instance(i).value(j));
+				}
+				else if(classifiedTestingData.attribute(j).isNominal()){
+					instance.addProperty(classifiedTestingData.attribute(j).name(), classifiedTestingData.instance(i).stringValue(j));
+				}
 			}
 			instances.add(instance);
 		}
